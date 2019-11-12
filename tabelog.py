@@ -33,6 +33,8 @@ class Tabelog:
         while self._count < self._max_contents and self._page <= self.max_check_page:
             #print("self._count:"+str(self._count))
             self.re_select(soup)
+        if self.return_json == templates.carousel():
+            self.return_json = "エラーです。最初は地名を入れてください。"
         return self.return_json
 
     def setup(self):
