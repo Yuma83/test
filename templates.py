@@ -63,7 +63,7 @@ def carousel():
               },
               {
                 "type": "icon",
-                "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png",
+                "url": "https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png",
                 "size": "sm"
               },
               {
