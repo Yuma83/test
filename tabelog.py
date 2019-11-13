@@ -9,7 +9,7 @@ import templates
 
 class Tabelog:
     """
-    食べログスクレイピングクラス。場所とキーワードと条件からランキング順に10件表示。
+    食べログスクレイピングクラス。場所とキーワードと条件からランキング順に予算5000円以内のコスパいい店を10件表示。
     """
     def __init__(self, place, keyword, max_price = 5000, max_check_page = 5):
         self._count = 0 #表示する店の数
@@ -92,35 +92,43 @@ class Tabelog:
                     #カウント1以上の時にリストコピーを作る
                     if self._count >=1:
                         self.return_json["contents"]["contents"].append(copy.deepcopy(self.return_json["contents"]["contents"][0]))
+                    #評価確認
+                    try: 
+                        rating = tag.find("span",{"class": "c-rating__val c-rating__val--strong list-rst__rating-val"}).text
+                        self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][5]['text'] = "評価:" +  rating
+                    except AttributeError:
+                        self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][5]['text'] = "評価なし"
+                    #もし前のよりも評価の高いコンテンツが上がってきたらそのリストを消してbreakする。
+                    try:
+                        if not float(self.return_json["contents"]["contents"][self._count - 1]['body']['contents'][1]['contents'][5]['text'][3:]) - float(rating) >= 0:
+                            del self.return_json["contents"]["contents"][self._count]
+                            break
+                    except TypeError: #評価なしを想定
+                        pass
+                    
+                    try: #星の数。デフォ4つ
+                        if float(rating) < 4.0:
+                            self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][4]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
+                            if float(rating) < 3.5:
+                                self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][3]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
+                                if float(rating) < 3.0:
+                                    self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][2]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
+                                    if float(rating) < 2.5:
+                                        self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][1]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
+                    except: #評価なしを想定
+                        for i in range(4):
+                            self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][i]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
+
                     self.return_json["contents"]["contents"][self._count]['hero']['url'] = tag.img["data-original"] #画像
                     self.return_json["contents"]["contents"][self._count]['body']['contents'][0]['text'] = tag.a.text #店名
                     self.return_json["contents"]["contents"][self._count]['hero']['action']['uri'] = tag.a["href"] #リンク
                     self.return_json["contents"]["contents"][self._count]['footer']['contents'][0]['action']['uri'] = tag.a["href"] #リンク
                     self.return_json["contents"]["contents"][self._count]['body']['contents'][2]['contents'][0]['contents'][1]['text'] = tag.find("span",{"class": "list-rst__area-genre cpy-area-genre"}).text.replace(" / ","\n") #場所
-                    try: #評価
-                        rating = tag.find("span",{"class": "c-rating__val c-rating__val--strong list-rst__rating-val"}).text
-                        self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][5]['text'] = "評価:" +  rating
-                    except AttributeError:
-                        self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][5]['text'] = "評価なし"
 
-                    try: #星の数。デフォ4つ
-                        if float(rating) >4.0:
-                            self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][4]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gold_star_28.png'
-                        if float(rating) <3.5:
-                            self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][3]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
-                            if float(rating) <3.0:
-                                self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][2]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
-                                if float(rating) <2.5:
-                                    self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][1]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
-                    except: #評価なしを想定
-                        for i in range(4):
-                            self.return_json["contents"]["contents"][self._count]['body']['contents'][1]['contents'][i]['url'] = 'https://scdn.line-apps.com/n/channel_devcenter/img/fx/review_gray_star_28.png'
-                
                     budget_list = [budget.text.split()[0] for budget in budgets] #予算
                     self.return_json["contents"]["contents"][self._count]['body']['contents'][2]['contents'][1]['contents'][1]['text'] ='\n'.join(budget_list)           
                     try:
                         self.return_json["contents"]["contents"][self._count]['body']['contents'][2]['contents'][2]['contents'][1]['text'] = tag.find("span",{"class": "list-rst__holiday-datatxt cpy-holiday-datatxt"}).text #定休日
                     except AttributeError:
                         self.return_json["contents"]["contents"][self._count]['body']['contents'][2]['contents'][2]['contents'][1]['text'] = "不明"
-                    #self.return_text += "\n"
                     self._count += 1
